@@ -2,15 +2,15 @@ from UserList import UserList
 from random import shuffle
 
 RANK_VALUE_HASH = {
-	2:			(2),
-	3:			(3),
-	4:			(4),
-	5:			(5),
-	6:			(6),
-	7:			(7),
-	8:			(8),
-	9:			(9),
-	10:			(10),
+	'Two':			(2),
+	'Three':			(3),
+	'Four':			(4),
+	'Five':			(5),
+	'Six':			(6),
+	'Seven':			(7),
+	'Eight':			(8),
+	'Nine':			(9),
+	'Ten':			(10),
 	'Jack':		(10),
 	'Queen':	(10),
 	'King':		(10),
@@ -19,7 +19,7 @@ RANK_VALUE_HASH = {
 
 SUITS = ('Spades', 'Heart' , 'Diamonds', 'Clubs')
 
-RANKS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 'Jack', 'Queen', 'King', 'Ace')
+RANKS = ('Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King', 'Ace')
 
 class BlackjackCard(object):
 	def __init__(self, rank, suit):
@@ -29,6 +29,9 @@ class BlackjackCard(object):
 	@property
 	def value(self):
 		return RANK_VALUE_HASH[self.rank]
+	@property
+	def name(self):
+		return self.__repr__()
 
 	def __repr__(self):
 		return "%s of %s" % (self.rank,self.suit)
@@ -49,7 +52,7 @@ class BlackjackDeck(UserList):
 		return self.data.pop(0)
 
 	def reset(self):
-		self.data = [BlackjackCard(suit, rank) for suit in SUITS for rank in RANKS for x in range(decks)]
+		self.data = [BlackjackCard(rank, suit) for suit in SUITS for rank in RANKS for x in range(self.decks)]
 		self.shuffle()
 
 

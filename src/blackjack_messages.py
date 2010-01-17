@@ -1,7 +1,7 @@
 from pysage import Message
 
 class Decision(Message):
-	'''Class used for messages telling the player's decision.
+	'''Class used for messages telling the player's decision for the current bet.
 	Action can be "hit", "stand", "double down", "split"'''
 	# sent by a player to the dealer
 	properties = ['action']
@@ -12,7 +12,7 @@ class TurnAnnouncement(Message):
 	# sent by the dealer
 	properties = ['player_id']
 	packet_type=102
-	# TODO - do we need it?
+	# TODO - do we need it? No!!! :(
 
 class WagerRequest(Message):
 	'''Class used for sending a request to each player to
@@ -32,13 +32,13 @@ class WagerResponse(Message):
 	packet_type=104
 
 class BlackjackAnnouncement(Message):
-	'''Class used for announcing player's blackjack'''
+	'''Class used for announcing player's or the dealer's blackjack'''
 	properties=['bet_number']
 	packet_type=105
 	# sent by the player to the dealer
 
 class BustAnnouncement(Message):
-	'''Class used for announcing that a player busts'''
+	'''Class used for announcing that a player or the dealer busts'''
 	properties=['bet_number']
 	packet_type=106
 	# sent by the player to the dealer
