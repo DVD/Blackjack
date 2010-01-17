@@ -10,7 +10,7 @@ class Decision(Message):
 class TurnAnnouncement(Message):
 	'''Class used for telling whose turn it is'''
 	# sent by the dealer
-	properties = ['player']
+	properties = ['player_id']
 	packet_type=102
 	# TODO - do we need it?
 
@@ -19,25 +19,27 @@ class WagerRequest(Message):
 	place their wager'''
 	# sent by the dealer to the player
 	# sent by the human player to the GUI
-	properties = ['player','bet']
+	# when sent by the human player to the GUI
+	# 'player_id'='GUI'
+	properties = ['player_id','bet_number']
 	packet_type=103
 
 class WagerResponse(Message):
 	'''Class used for announcing the player's wager'''
 	# sent by the player to the dealer
 	# sent by the GUI to the human player
-	properties = ['bet','wager']
+	properties = ['bet_number','bet_wager']
 	packet_type=104
 
 class BlackjackAnnouncement(Message):
 	'''Class used for announcing player's blackjack'''
-	properties=['bet']
+	properties=['bet_number']
 	packet_type=105
 	# sent by the player to the dealer
 
 class BustAnnouncement(Message):
 	'''Class used for announcing that a player busts'''
-	properties=['bet']
+	properties=['bet_number']
 	packet_type=106
 	# sent by the player to the dealer
 
@@ -46,7 +48,9 @@ class InsuranceOffer(Message):
 	to make an insurance bet'''
 	# sent by the dealer to the player
 	# sent by the human player to the GUI
-	properties = ['player']
+	# when sent by the human player to the GUI
+	# 'player_id'='GUI'
+	properties = ['player_id']
 	packet_type=107
 
 class InsuranceResponse(Message):
@@ -59,20 +63,20 @@ class InsuranceResponse(Message):
 
 class CardDeal(Message):
 	'''Class used for sending a card to the player'''
-	properties = ['player', 'bet', 'card']
+	properties = ['player_id', 'bet_number', 'card']
 	packet_type=109
 	# sent by the dealer to the player
 	# always a single card
 
 class HumanDecision(Message):
 	'''Class used for passing the human player's decision by the GUI'''
-	properties=['player','action']
+	properties=['player_id','action']
 	packet_type=110
 	# sent bythe GUI to the human player
 
 class HumanInsuranceResponse(Message):
 	'''Class used for answering to insurance offer by a human player'''
-	properties = ['player','answer']
+	properties = ['player_id','answer']
 	packet_type=111
 	# sent by the GUI to the human player
 	# the insurance bet is half of the initial bet
