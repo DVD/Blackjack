@@ -1,18 +1,33 @@
 from pysage import Message
 
 class Decision(Message):
-	'''Class used for messages telling the player's decision for the current bet.
+	'''Class used for messages telling the player's decision for the current hand.
 	Action can be "hit", "stand", "double down", "split"'''
 	# sent by a player to the dealer
 	properties = ['action']
-	packet_type=101
+	packet_type = 101
 
-class TurnAnnouncement(Message):
+class PlayerTurn(Message):
 	'''Class used for telling whose turn it is'''
 	# sent by the dealer
-	properties = ['player_id']
-	packet_type=102
-	# TODO - do we need it? No!!! :(
+	# used mainly by the GUI
+	properties = ['player_id', 'hand_number']
+	packet_type = 102
+
+class PlayerHandTurn(Message):
+	'''Class used for telling which hand on the table is on turn'''
+	# sent by the dealer
+	# used mainly by the GUI
+	properties = ['player_id', 'hand_number']
+	packet_type = 112
+
+class NextRound(Message):
+	'''Class used to announce next round in the game (on the table)'''
+	# sent by the dealer
+	# used mainly by the GUI
+	properties = ['round_number', 'active_players']
+	packet_type = 113
+	# needs more thinking
 
 class WagerRequest(Message):
 	'''Class used for sending a request to each player to
@@ -21,25 +36,25 @@ class WagerRequest(Message):
 	# sent by the human player to the GUI
 	# when sent by the human player to the GUI
 	# 'player_id'='GUI'
-	properties = ['player_id','bet_number']
-	packet_type=103
+	properties = ['player_id']
+	packet_type = 103
 
 class WagerResponse(Message):
 	'''Class used for announcing the player's wager'''
 	# sent by the player to the dealer
 	# sent by the GUI to the human player
-	properties = ['bet_number','bet_wager']
-	packet_type=104
+	properties = ['hand_number','hand_wager']
+	packet_type = 104
 
 class BlackjackAnnouncement(Message):
 	'''Class used for announcing player's or the dealer's blackjack'''
-	properties=['bet_number']
+	properties=['hand_number']
 	packet_type=105
 	# sent by the player to the dealer
 
 class BustAnnouncement(Message):
 	'''Class used for announcing that a player or the dealer busts'''
-	properties=['bet_number']
+	properties=['hand_number']
 	packet_type=106
 	# sent by the player to the dealer
 
@@ -63,7 +78,7 @@ class InsuranceResponse(Message):
 
 class CardDeal(Message):
 	'''Class used for sending a card to the player'''
-	properties = ['player_id', 'bet_number', 'card']
+	properties = ['player_id', 'hand_number', 'card']
 	packet_type=109
 	# sent by the dealer to the player
 	# always a single card
