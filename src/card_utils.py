@@ -2,6 +2,17 @@ from UserList import UserList
 from random import shuffle
 
 RANK_VALUE_HASH = {
+<<<<<<< HEAD:src/card_utils.py
+	'Two':		(2),
+	'Three':		(3),
+	'Four':		(4),
+	'Five':		(5),
+	'Six':		(6),
+	'Seven':		(7),
+	'Eight':		(8),
+	'Nine':		(9),
+	'Ten':		(10),
+=======
 	'Two':			(2),
 	'Three':			(3),
 	'Four':			(4),
@@ -11,8 +22,9 @@ RANK_VALUE_HASH = {
 	'Eight':			(8),
 	'Nine':			(9),
 	'Ten':			(10),
+>>>>>>> 5f691726b47be8e0f6ca28310c082bce973da4d9:src/card_utils.py
 	'Jack':		(10),
-	'Queen':	(10),
+	'Queen':		(10),
 	'King':		(10),
 	'Ace':		(11, 1)
 }
