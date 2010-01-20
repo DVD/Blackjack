@@ -1,0 +1,6 @@
+We've decided to rename several things bacause they needed more suitable names.
+First off and more important: what we used to call a (Blackjack)Bet now is going to be called a BlackjackHand. The reason is that this way we can use the same class for the cards of the dealer (with wager value of 0) and we won't need to write once again the sum calculations and the blackjack and bust checking. So we rename this class just for correctness of speech.
+Second off, up to now we used to call a hand the whole thing between betting and payoffs. The term is correct, but since we renamed the former (Blackjack)Bet to BlackjackHand, in order to avoid disambiguation, from now on we shall call this a round. So our game is a game of 30 ROUNDS (or less if someone wins earlier). This term is supposed to be correct as well.
+These renamings influenced several class fields, one method name (__play_hand in GameTable became __play_round) and several message properties. For the later you can check out the blackjack_messages module. Which by the way will probably need a few more messages.
+Sorry for the discomforts these changes may cause, but they [must] make things better for all of us.
+

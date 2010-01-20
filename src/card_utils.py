@@ -56,11 +56,12 @@ class BlackjackDeck(UserList):
 		self.shuffle()
 
 
-class BlackjackBet(object):
+class BlackjackHand(object):
 	def __init__(self):
 		self._cards = []
 		self.wager = 0
 		self._sum = [0]
+		self.status = 'not played'
 
 	def add_card(self, card):
 		self._cards.append(card)
@@ -68,6 +69,11 @@ class BlackjackBet(object):
 		self._sum = []
 		for new_val in card.value:
 			self._sum.extend(filter(lambda x: x <= 21, map(lambda x: x + new_val, tmp)))
+		if self.is_blackjack():
+			self.status = 'blackjack'
+		elif len(self._sum) == 0:
+			self.status = 'busted'
+		return self.status
 	
 	@property
 	def sum(self):
@@ -81,18 +87,21 @@ class BlackjackBet(object):
 		# Application must check if the player is allowed to double-down
 		# and if they have enough money for that
 		self.wager*=2
-	
+
 	def split(self):
 		# Application must check if the player is allowed to split
 		# and if they have enough money for the new wager
-		if(len(self._cards)!=2 or self._cards[0]!=self._cards[1]):
+		if(len(self._cards)!=2 or
+				self._cards[0]!=self._cards[1]):
 			raise 'ActionNotAllowedError'
-		new_bet=Bet()
-		new_bet.wager=self.wager
+		new_hand=BlackjackHand()
+		new_hand.wager=self.wager
 		self._sum=list(self._cards[0].value)
-		new_bet.add_card(self._cards.pop(1))
-		return new_bet
+		new_hand.add_card(self._cards.pop(1))
+		return new_hand
 
+	def is_blackjack():
+		return 21 in self._sum and len(self._cards) == 2
 
 if __name__ == '__main__':
 	deck = BlackjackDeck()
