@@ -16,7 +16,7 @@ PANEL_WIDTH = 170
 PANEL_HEIGHT = 500
 LABEL_OFFSET = 15
 CARD_OFFSET_SIDE = 15
-CARD_OFFSET_DOWN = 30
+CARD_OFFSET_DOWN = 20
 CARD_HEIGHT = 123
 CARD_WIDTH = 79
 COLUMNS_OFFSET = 5
@@ -59,7 +59,7 @@ class BlackjackTable(wx.Frame, pysage.Actor):
             global_grid1.Add((PANEL_WIDTH, DEALER_PANEL_HEIGHT), 0)
 
         # adding the Dealer
-        global_grid1.Add(DealerPanel(global_panel, -1, (0, 0), (PANEL_WIDTH * 2, DEALER_PANEL_HEIGHT)), 1, wx.TOP, 50)
+        global_grid1.Add(DealerPanel(global_panel, -1, (0, 0), (PANEL_WIDTH, DEALER_PANEL_HEIGHT)), 1, wx.TOP, 0)
 
         # inserting empty spaces (what are we livin' for)
         global_grid1.Add((PANEL_WIDTH, DEALER_PANEL_HEIGHT), 0)
@@ -89,9 +89,9 @@ class BlackjackTable(wx.Frame, pysage.Actor):
         '''Event handler for a keypad button pressed'''
         keycode = event.GetKeyCode()
         if keycode == wx.WXK_ESCAPE:
+#        if keycode == wx.WXK_H:
             self.app.ExitMainLoop()
-            print "MainLoopExited"
-            if self.player_panels[self.active_player].active_wager > 3:
+            if self.player_panels[self.active_player].active_wager > 2:
                 self.set_active_player(self.active_player + 1)
             else:
                 self.player_panels[self.active_player].set_wager_active(self.player_panels[self.active_player].active_wager + 1)
@@ -131,7 +131,7 @@ class PlayerPanel(wx.Panel):
         player_label = wx.StaticText(label_panel, -1, "PLAYER: " + player_name, (0, 0))
         strategy_label = wx.StaticText(label_panel, -1, "STRATEGY: " + strategy_name, (0, LABEL_OFFSET))
 
-        wagers_panel = wx.Panel(self, -1, (0, LABEL_OFFSET), (PANEL_WIDTH, PANEL_HEIGHT - LABEL_OFFSET * 2))
+        wagers_panel = wx.Panel(self, -1, (0, LABEL_OFFSET*2), (PANEL_WIDTH, PANEL_HEIGHT - LABEL_OFFSET))
         wagers_panel.SetBackgroundColour(BACKGROUND_COLOR)
 
         wagers_grid = wx.GridSizer(2, 2, 20, 20)
@@ -139,13 +139,14 @@ class PlayerPanel(wx.Panel):
         #Here we create a WagerPanel for each of the four possible wagers of a player
         for i in range(4):
             if i < 2:
-                wager_panel = WagerPanel(wagers_panel, i, (i * (PANEL_WIDTH / 2), 0), (PANEL_WIDTH / 2, PANEL_HEIGHT / 2))
+                wager_panel = WagerPanel(wagers_panel, i, (i * (PANEL_WIDTH / 2), 0), (PANEL_WIDTH / 2, PANEL_HEIGHT / 2 - LABEL_OFFSET))
             else:
-                wager_panel = WagerPanel(wagers_panel, i, ((i % 2) * (PANEL_WIDTH / 2), PANEL_HEIGHT / 2), (PANEL_WIDTH / 2, PANEL_HEIGHT / 2))
-            wagers_grid.Add(wager_panel)
+                wager_panel = WagerPanel(wagers_panel, i, ((i % 2) * (PANEL_WIDTH / 2), PANEL_HEIGHT / 2 - LABEL_OFFSET), (PANEL_WIDTH / 2, PANEL_HEIGHT / 2 - LABEL_OFFSET))
+                #wager_panel = WagerPanel(wagers_panel, i, (PANEL_WIDTH / 2, PANEL_HEIGHT / 2), (PANEL_WIDTH / 2, PANEL_HEIGHT / 2))
+            #wagers_grid.Add(wager_panel)
 
             self.wager_panels.append(wager_panel)
-        wagers_panel.SetSizer(wagers_grid)
+        #wagers_panel.SetSizer(wagers_grid)
 
         vbox.Add(strategy_label, 0, wx.BOTTOM, 9)
         vbox.Add(player_label, 0, wx.BOTTOM, 9)
@@ -202,6 +203,7 @@ class CardPanel(wx.Panel):
         return "../images/" + file_name + ".png"
 
     def set_action(self, action=""):
+        '''Setter for the aaction label(the action param denotes the action performed.'''
         action_string = "ACTION " + action
         self.action_label = wx.StaticText(self, -1, action_string, (0, LABEL_OFFSET))
 
@@ -231,31 +233,49 @@ class DealerPanel(CardPanel):
         self.number_of_cards = 0
         self.action_label = wx.StaticText(self, -1, "ACTION: ", (0, LABEL_OFFSET))
 
-        self.add_card_to_position('../images/queenofdiamonds.png', 0, LABEL_OFFSET * 2, 0)
+        # keeps the name of the first card that stays hidden
+        self.initial_card = ""
+        print self.initial_card
+        
+        self.add_card_to_next_position("Ten of Spades")
+        self.add_card_to_next_position("Ace of Hearts") 
 
+        self.add_card_to_next_position("Ace of Hearts") 
+        self.add_card_to_next_position("Ace of Hearts") 
+        self.add_card_to_next_position("Ace of Hearts") 
+        self.add_card_to_next_position("Ace of Hearts") 
+        self.unhide_initial_card()
 
-        def reset(self):
-            CardPanel.reset(self)
+    def reset(self):
+        CardPanel.reset(self)
 
-        def extract_file_name(self, card_name):
-            '''Extracts an image file name from card_name'''
-            return CardPanel.extract_file_name(self, card_name)
+    def extract_file_name(self, card_name):
+        '''Extracts an image file name from card_name'''
+        return CardPanel.extract_file_name(self, card_name)
 
-        def set_action(self, action=""):
-            CardPanel.set_action(self, ction)
+    def set_action(self, action=""):
+        '''Setter for the aaction label(the action param denotes the action performed.'''
+        CardPanel.set_action(self, action)
 
+    def add_card_to_position (self, image_file_name, x, y, id):
+        '''Adds a card(specified by its filename) to the specified,
+        local for this PlayerPanel,  coordinates'''
+        CardPanel.add_card_to_position(self, image_file_name, x, y, id)
 
-        def add_card_to_position (self, image_file_name, x, y, id):
-            '''Adds a card(specified by its filename) to the specified,
-              local for this PlayerPanel,  coordinates'''
-            CardPanel.add_card_to_position(self, image_file_name, x, y, id)
-
-        def add_card_to_next_position(self, card_name):
-            '''This methods adds the card, whose name by convention is card_name,
-              to the pile of the dealer'''
+    def add_card_to_next_position(self, card_name):
+        '''This methods adds the card, whose name by convention is card_name,
+        to the pile of the dealer'''
+        if self.number_of_cards == 0:
+            self.initial_card = card_name
+            self.add_card_to_position("../images/back.png", 0, LABEL_OFFSET * 2, self.number_of_cards)
+        else:
             card_image_file_name = self.extract_file_name(card_name)
-            self.add_card_to_position(card_image_file_name, LABEL_OFFSET * 2, self.number_of_cards * CARD_OFFSET_SIDE, self.number_of_cards)
-            self.number_of_cards += 1
+            self.add_card_to_position(card_image_file_name, CARD_WIDTH + self.number_of_cards * CARD_OFFSET_SIDE, LABEL_OFFSET * 2, self.number_of_cards)
+        self.number_of_cards += 1
+
+    def unhide_initial_card(self):
+        card_image_file_name = self.extract_file_name(self.initial_card)
+        self.add_card_to_position(card_image_file_name, 0, LABEL_OFFSET * 2, 0)
 
 
 
@@ -269,8 +289,7 @@ class WagerPanel(CardPanel):
         self.wager_label = wx.StaticText(self, -1, "WAGER: ", (0, 0))
         self.action_label = wx.StaticText(self, -1, "ACTION: ", (0, LABEL_OFFSET))
 
-        self.add_card_to_position('../images/queenofdiamonds.png', 0, LABEL_OFFSET * 2, 0)
-
+        self.add_card_to_next_position("King of Spades")
 
     def reset(self):
         CardPanel.reset(self)
@@ -279,10 +298,12 @@ class WagerPanel(CardPanel):
         '''Extracts an image file name from card_name'''
         return CardPanel.extract_file_name(self, card_name)
 
-    def set_action(self, action=""):
+    def set_action(self, action=""):    
+        '''Setter for the action label(the action param denotes the action performed).'''
         CardPanel.set_action(self, ction)
 
     def set_wager(self, wager=0):
+        '''Setter for the wager label(the wager param denotes the wager performed).'''
         wager_string = "WAGER" + str(wager)
         self.wager_label = wx.StaticText(self, -1, "WAGER: ", (0, 0))
 
@@ -295,15 +316,17 @@ class WagerPanel(CardPanel):
         '''This methods adds the card, whose name by convention is card_name,
             to the pile of that particular wager'''
         card_image_file_name = self.extract_file_name(card_name)
-        self.add_card_to_position(card_image_file_name, 0, -1 * self.number_of_cards * CARD_OFFSET_DOWN, self.number_of_cards)
+        self.add_card_to_position(card_image_file_name, 0, self.number_of_cards * CARD_OFFSET_DOWN + LABEL_OFFSET * 2, self.number_of_cards)
         self.number_of_cards += 1
 
     def set_active(self, active=True):
+        '''Setter for if the Panel is active; color the active panel.'''
         self.SetBackgroundColour(ACTIVE_PLAYER_COLOR) if active else self.SetBackgroundColour(INACTIVE_PLAYER_COLOR)
 
 
 
 class HumanPlayerRulesPanel(wx.Panel):
+    '''Simple class with only labels to denote rules for the HumanPlayer'''
     def __init__(self, parent, size, player_label):
         super(wx.Panel, self).__init__(parent, -1, (0, 0), size)
         self.SetBackgroundColour(BACKGROUND_COLOR)
