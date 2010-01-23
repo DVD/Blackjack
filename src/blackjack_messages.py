@@ -53,7 +53,7 @@ class NextRound(Message):
     # sent by the dealer
     # used by the UI
 
-class DecsiosionRequest(Message):
+class DecisionRequest(Message):
     '''Class used for asking the player for their decision'''
     # sent by the dealer to the player
     properties=['player_id','hand_number']
