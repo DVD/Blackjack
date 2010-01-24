@@ -16,7 +16,7 @@ class WagerResponse(Message):
 class InsuranceResponse(Message):
     '''Class used for answering to insurance offer'''
     properties = ['answer']
-    packet_type=103
+    packet_type = 103
     # sent by the player to the dealer
     # the insurance bet is half of the initial bet
     # accepting or rejecting to make an asurance does not affect the dealer
@@ -24,19 +24,19 @@ class InsuranceResponse(Message):
 class BlackjackAnnouncement(Message):
     '''Class used for announcing player's or the dealer's blackjack'''
     properties=['hand_number']
-    packet_type=104
+    packet_type = 104
     # sent by the player or the dealer
 
 class BustAnnouncement(Message):
     '''Class used for announcing that a player or the dealer busts'''
     properties=['hand_number']
-    packet_type=105
+    packet_type = 105
     # sent by the player or the dealer
 
 class CardDeal(Message):
     '''Class used for sending a card to the player'''
     properties = ['player_id', 'hand_number', 'card']
-    packet_type=106
+    packet_type = 106
     # sent by the dealer to the player
     # always a single card
 
@@ -57,7 +57,7 @@ class DecisionRequest(Message):
     '''Class used for asking the player for their decision'''
     # sent by the dealer to the player
     properties=['player_id','hand_number']
-    packet_type=109
+    packet_type = 109
 
 class WagerRequest(Message):
     '''Class used for sending a request to each player to
@@ -71,12 +71,12 @@ class InsuranceOffer(Message):
     to make an insurance bet'''
     # sent by the dealer to the player
     properties = ['player_id']
-    packet_type=111
+    packet_type = 111
 
 class HumanInsuranceResponse(Message):
     '''Class used for answering to insurance offer by a human player'''
     properties = ['player_id','answer']
-    packet_type=112
+    packet_type = 112
     # sent by the UI to the HumanPlayer class
     # the insurance bet is half of the initial bet
     # accepting or rejecting to make an asurance does not affect the dealer
@@ -84,14 +84,14 @@ class HumanInsuranceResponse(Message):
 class HumanDecisionResponse(Message):
     '''Class used for passing the human player's decision by the UI'''
     properties=['player_id','action']
-    packet_type=113
+    packet_type = 113
     # sent by the UI to the HumanPlayer class
 
 class HumanWagerRequest(Message):
     '''Class used for asking the UI to 
     ask the human player for a wager'''
     properties=[]
-    packet_type=114
+    packet_type = 114
     # sent by the HumanPlayer class to the UI
 
 class HumanInsuranceOffer(Message):
@@ -99,19 +99,19 @@ class HumanInsuranceOffer(Message):
     the human player if they want
     to make an insurance bet'''
     properties=[]
-    packet_type=115
+    packet_type = 115
     # sent by the HumanPlayer class to the UI
 
 class HumanDecisionRequest(Message):
     '''Class used for asking the UI to ask the
     human player for an action to be taken'''
     properties=['allowed_actions']
-    packet_type=116
+    packet_type = 116
     # sent by the HumanPlayer class to the UI
 
 class HumanWagerResponse(Message):
     '''Class used for passing the human player's wager by the UI'''
     properties=['player_id','wager_amount']
-    packet_type=117
+    packet_type = 117
     # sent by the UI to the HumanPlayer class
 

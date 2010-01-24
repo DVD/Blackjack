@@ -1,4 +1,4 @@
-from pysage import Actor, ActorManager, Messages
+from pysage import Actor, ActorManager, Message
 from blackjack_messages import *
 
 class SimpleUI(Actor):
@@ -6,12 +6,12 @@ class SimpleUI(Actor):
             'DecisionRequest', 'DecisionResponse', 'PlayerTurn',
             'PlayerHandTurn', 'NextRound', 'WagerRequest', 
             'WagerResponse', 'BlackjackAnnouncement', 'BustAnnouncement',
-            'InsuranceOffer', 'InsuranceResponse', 'CardDeal'
-            'HumanDecisionResponse', 'HumanInsuranceResponse', 
+            'InsuranceOffer', 'InsuranceResponse', 'CardDeal',
+            'HumanDecisionRequest', 'HumanInsuranceResponse', 
             ]
     def send_message(self,msg):
         msg.sender='ui'
-        ActionManager.get_singleton().trigger(msg)
+        ActorManager.get_singleton().trigger(msg)
 
     def handle_NextRound(self,msg):
         print('*'*50)
@@ -34,7 +34,7 @@ class SimpleUI(Actor):
         answer=None
         while not answer in msg.get_property('allowed_actions'):
             answer=raw_input("How do you play? %s :" % msg.get_property('allowed_actions'))
-        send_message(HumanDecisionResponse(player_id=msg.get_sender(),action=answer))
+        self.send_message(HumanDecisionResponse(player_id=msg.get_sender(),action=answer))
 
     def handle_WagerRequest(self,msg):
         if msg.get_sender()=='dealer':
@@ -45,7 +45,7 @@ class SimpleUI(Actor):
 
     def handle_HumanWagerRequest(self,msg):
         wager=int(raw_input("Place your wager:"))
-        send_message(HumanWagerResponse(player_id=msg.get_sender(),wager_amount=wager))
+        self.send_message(HumanWagerResponse(player_id=msg.get_sender(),wager_amount=wager))
 
     def handle_InsuranceOffer(self,msg):
         print("Dealer offers player %s to make an insurance bet" % msg.get_property('player_id'))
@@ -57,7 +57,7 @@ class SimpleUI(Actor):
         response=None
         while not response in ('yes','no'):
             response=raw_input("Do you wish to make an insurance bet? (yes,no): ")
-        send_message(HumanInsuranceResponse(player_id=msg.get_sender(),answer=response))
+        self.send_message(HumanInsuranceResponse(player_id=msg.get_sender(),answer=response))
 
     def handle_BlackjackAnnouncement(self,msg):
         if msg.get_sender()=='dealer':
