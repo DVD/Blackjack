@@ -108,6 +108,9 @@ class BlackjackHand(object):
     def is_busted(self):
         return self._sum == []
 
+    def is_hard(self):
+        return len(self._sum) <= 1
+
 
 if __name__ == '__main__':
     deck = BlackjackDeck()
