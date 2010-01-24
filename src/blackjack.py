@@ -21,6 +21,7 @@ class GameTable(object):
         self.is_eliminated = [ False ] * 7
         # this initialization must change
         self.players = [ HumanPlayer(str(i), 100) for i in range(1) ]
+        self.players.append(BasicStrategyPlayer('2',200))
         self.ui = SimpleUI()
         # register players and dealer as actors
         am = ActorManager.get_singleton()
@@ -131,9 +132,9 @@ class Player(Actor):
         shall never be overridden.'''
         hand_number = msg.get_property('hand_number')
         card = msg.get_property('card')
-
-        if msg.get_property('player_id') != self.player_id:
-            self.card_dealt_to_player(card)
+        player=msg.get_property('player_id')
+        if player != self.player_id:
+            self.card_dealt_to_player(player,card)
             return
 
         self.hands[hand_number].add_card(card)
@@ -151,7 +152,7 @@ class Player(Actor):
             self.hands[hand_number].status = 'stand'
         self.send_message(DecisionResponse(action = action, hand_number = hand_number))
 
-    def card_dealt_to_player(self, card):
+    def card_dealt_to_player(self, player, card):
         raise NotImplementedError()
 
     def card_dealt_to_self(self, card, hand_number):
@@ -166,7 +167,7 @@ class HumanPlayer(Player):
         Player.__init__(self, player_id, money)
         self.subscriptions.extend(['HumanDecisionResponse'])
 
-    def card_dealt_to_player(self, card):
+    def card_dealt_to_player(self, player, card):
         pass
 
     def card_dealt_to_self(self, card, hand_number):
@@ -195,11 +196,22 @@ class BasicStrategyPlayer(Player):
 
     hard_hands_decisions = [
     [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
     [('hit')         ,('double','hit'),('double','hit'),('double','hit'),('double','hit'),('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
     [('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('hit',)        ,('hit',)        ],
     [('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit')],
     [('hit')         ,('hit')         ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
     [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
     [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
             ]
     split_pair_decisions = [
@@ -214,6 +226,21 @@ class BasicStrategyPlayer(Player):
             [False, False, False, False, False, False, False, False, False, False],
             [True , True , True , True , True , True , True , True , True , True ],
             ]
+
+    def card_dealt_to_player(self, player, card):
+        if player=='dealer':
+            self.dealer_upcard=card
+
+    def decide(self,hand_number):
+        hand=self.hands[hand_number]
+        if hand.is_hard:
+            return hard_hand_decisions[hand.sum[0]-4][self.dealer_upcard.value[0]-2]
+        else:
+            return soft_hand_decisions[max(hand.sum)-13][self.dealer_upcard.value[0]-2]
+        return
+    
+    def card_dealt_to_self(self,card,hand_number):
+        pass
 
 if __name__ == '__main__':
     game = GameTable()
