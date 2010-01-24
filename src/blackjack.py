@@ -1,4 +1,5 @@
 import card_utils
+import random
 from blackjack_messages import *
 from pysage import Actor, ActorManager
 from simpleui import *
@@ -163,6 +164,9 @@ class Player(Actor):
     def decide(self, hand_number):
         raise NotImplementedError()
 
+    def result(self, money):
+        pass
+
 
 class HumanPlayer(Player):
     def __init__(self, player_id, money):
@@ -243,6 +247,56 @@ class BasicStrategyPlayer(Player):
     
     def card_dealt_to_self(self,card,hand_number):
         pass
+
+
+class SARSAPlayer(Player):
+    states = tuple( [x for x in range(4, 32)] )
+    actions = ( 'hit', 'stand' )
+
+    def __init__(self, player_id, money, epsilon, alpha, gamma):
+        Player.__init__(self, player_id, money)
+        self.epsilon = epsilon
+        self.gamma = gamma
+        self.q = dict( [ (state, dict( [(action, random.random()) for action in SARSAPlayer.actions] ))  for state in SARSAPlayer.states ] )
+        self.reset()
+
+    def reset(self):
+        self.s = 0
+        self.a = 'no action'
+
+    def card_dealt_to_player(self, player, card):
+        pass
+
+    def card_dealt_to_self(self, card):
+        pass
+
+    def decide(hand_number):
+        #TODO: implement hands when we are ready
+
+        #epsilon-greedy choose
+        choose_best = random.random()
+        if choose_best < eps:
+            #so we have to pick a radom action
+            action = 'hit' if random.randint() == 1 else 'stand'
+            state = random.choice(self.hand[hand_number].sum)
+        else:
+            (action, state) = reduce(lambda x, y: (x[0][0],x[1]) if x[0][1] > y[0][1] else (y[0][0], y[1]), [(pair, st) for pair in self.q[st] for st in self.hand[hand_number].sum])
+
+        if self.s > 0:
+            self.q[self.s][self.a] += self.alpha * (self.r + self.gamma * self.q[state][action] - self.q[self.s][self.a])
+
+        self.s, self.a = state, action
+        self.r = 0
+
+    def result(money):
+        if result > 0:
+            self.r = 1
+        elif result < 0:
+            self.r = -1
+        else:
+            self.r = 0
+
+
 
 if __name__ == '__main__':
     game = GameTable()
