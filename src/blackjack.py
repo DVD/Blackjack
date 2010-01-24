@@ -165,7 +165,6 @@ class HumanPlayer(Player):
     def __init__(self, player_id, money):
         Player.__init__(self, player_id, money)
         self.subscriptions.extend(['HumanDecisionResponse'])
-        self.action = 'hit'
 
     def card_dealt_to_player(self, card):
         pass
@@ -181,6 +180,40 @@ class HumanPlayer(Player):
         if (msg.get_property('player_id') == self.player_id):
             self.action = msg.get_property('action')
 
+class BasicStrategyPlayer(Player):
+    soft_hands_decisions = [
+        [('hit',)          ,('hit',)          ,('hit',)          ,('double','hit')  ,('double','hit')  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ],
+        [('hit',)          ,('hit',)          ,('hit',)          ,('double','hit')  ,('double','hit')  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ],
+        [('hit',)          ,('hit',)          ,('double','hit')  ,('double','hit')  ,('double','hit')  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ],
+        [('hit',)          ,('hit',)          ,('double','hit')  ,('double','hit')  ,('double','hit')  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ],
+        [('hit',)          ,('double','hit')  ,('double','hit')  ,('double','hit')  ,('double','hit')  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ],
+        [('double','stand'),('double','stand'),('double','stand'),('double','stand'),('double','stand'),('stand',),('stand',),('hit',)  ,('hit',)  ,('hit',)  ],
+        [('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('double','stand'),('stand',),('stand',),('stand',),('stand',),('stand',)],
+        [('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',),('stand',),('stand',),('stand',),('stand',)],
+        [('stand',)         ('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',),('stand',),('stand',),('stand',),('stand',)],
+    ]
+
+    hard_hands_decisions = [
+    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('hit')         ,('double','hit'),('double','hit'),('double','hit'),('double','hit'),('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('hit',)        ,('hit',)        ],
+    [('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit')],
+    [('hit')         ,('hit')         ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
+            ]
+    split_pair_decisions = [
+            [True , True , True , True , True , True , False, False, False, False],
+            [True , True , True , True , True , True , False, False, False, False],
+            [False, False, False, True , True , False, False, False, False, False],
+            [False, False, False, False, False, False, False, False, False, False],
+            [True , True , True , True , True , False, False, False, False, False],
+            [True , True , True , True , True , True , False, False, False, False],
+            [True , True , True , True , True , True , True , True , True , True ],
+            [True , True , True , True , False, True , True , True , False, False],
+            [False, False, False, False, False, False, False, False, False, False],
+            [True , True , True , True , True , True , True , True , True , True ],
+            ]
 
 if __name__ == '__main__':
     game = GameTable()
