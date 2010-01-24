@@ -146,6 +146,8 @@ class Player(Actor):
             self.send_message(BustAnnouncement(hand_number = hand_number))
 
     def handle_DecisionRequest(self, msg):
+        if msg.get_property('player_id') != self.player_id:
+            return
         hand_number = msg.get_property('hand_number')
         action = self.decide(hand_number)
         if action == 'stand':
@@ -182,7 +184,7 @@ class HumanPlayer(Player):
             self.action = msg.get_property('action')
 
 class BasicStrategyPlayer(Player):
-    soft_hands_decisions = [
+    soft_hand_decisions = [
         [('hit',)          ,('hit',)          ,('hit',)          ,('double','hit')  ,('double','hit')  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ],
         [('hit',)          ,('hit',)          ,('hit',)          ,('double','hit')  ,('double','hit')  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ],
         [('hit',)          ,('hit',)          ,('double','hit')  ,('double','hit')  ,('double','hit')  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ,('hit',)  ],
@@ -194,25 +196,25 @@ class BasicStrategyPlayer(Player):
         [('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',),('stand',),('stand',),('stand',),('stand',)],
     ]
 
-    hard_hands_decisions = [
-    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('hit')         ,('double','hit'),('double','hit'),('double','hit'),('double','hit'),('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
+    hard_hand_decisions = [
+    [('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('hit',)         ,('double','hit'),('double','hit'),('double','hit'),('double','hit'),('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
     [('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('hit',)        ,('hit',)        ],
     [('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit'),('double','hit')],
-    [('hit')         ,('hit')         ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('hit')         ,('hit')         ,('hit')         ,('hit',)        ,('hit',)        ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
-    [('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand')       ,('stand',)      ,('stand',)      ],
+    [('hit',)         ,('hit',)         ,('stand',)       ,('stand',)       ,('stand',)       ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('hit',)         ,('hit',)         ,('hit',)         ,('hit',)        ,('hit',)        ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)      ,('stand',)      ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)      ,('stand',)      ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)      ,('stand',)      ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)      ,('stand',)      ],
+    [('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)       ,('stand',)      ,('stand',)      ],
             ]
     split_pair_decisions = [
             [True , True , True , True , True , True , False, False, False, False],
@@ -234,9 +236,9 @@ class BasicStrategyPlayer(Player):
     def decide(self,hand_number):
         hand=self.hands[hand_number]
         if hand.is_hard:
-            return hard_hand_decisions[hand.sum[0]-4][self.dealer_upcard.value[0]-2]
+            return BasicStrategyPlayer.hard_hand_decisions[hand.sum[0]-4][self.dealer_upcard.value[0]-2][-1]
         else:
-            return soft_hand_decisions[max(hand.sum)-13][self.dealer_upcard.value[0]-2]
+            return BasicStrategyPlayer.soft_hand_decisions[max(hand.sum)-13][self.dealer_upcard.value[0]-2][-1]
         return
     
     def card_dealt_to_self(self,card,hand_number):
