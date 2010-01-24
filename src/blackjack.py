@@ -21,7 +21,8 @@ class GameTable(object):
         self.is_eliminated = [ False ] * 7
         # this initialization must change
         self.players = [ HumanPlayer(str(i), 100) for i in range(1) ]
-        self.players.append(BasicStrategyPlayer('2',200))
+        self.players.append(BasicStrategyPlayer('1',200))
+        self.players.append(HiLoCountingPlayer('2',250))
         self.ui = SimpleUI()
         # register players and dealer as actors
         am = ActorManager.get_singleton()
@@ -269,15 +270,21 @@ class HiLoCountingPlayer(BasicStrategyPlayer):
     def __init__(self,player_id,money):
         BasicStrategyPlayer.__init__(self,player_id,money)
         self.running_count=0
-        self.unseen_cards=0
+        self.unseen_cards=312
 
     @property
     def true_count(self):
         return self.running_count/(self.unseen_cards/52.0)
 
+    def _count_card(self,card):
+        if self.unseen_cards==0:
+            self.unseen_cards=312
+        self.unseen_cards-=1
+        self.running_count+=self._count_value(card)
+
     def card_dealt_to_player(self ,player, card):
         BasicStrategyPlayer.card_dealt_to_player(self,player,card)
-        self.running_count+=self._count_value(card)
+        self._count_card(card)
 
     def _count_value(self,card):
         if card.value[0]<=6:
@@ -285,12 +292,13 @@ class HiLoCountingPlayer(BasicStrategyPlayer):
         elif card.value[0]>=10:
             return -1
         return 0
+    
     def card_dealt_to_self(self,card,hand_number):
-        self.running_count+=self._count_value(card)
+        self._count_card(card)
 
     def decide(self,hand_number):
         hand = self.hands[hand_number]
-        illustrious18_record = HiLoCountingPlayer.illustrious18[max(hand.sum)-4][self.dealer_upcard-2]
+        illustrious18_record = HiLoCountingPlayer.illustrious18[max(hand.sum)-4][self.dealer_upcard.value[0]-2]
         if illustrious18_record==None or self.true_count<illustrious18_record[1]:
             return BasicStrategyPlayer.decide(self,hand_number)
         else:
