@@ -141,15 +141,15 @@ class Player(Actor):
 
         if self.hands[hand_number].is_blackjack():
             self.send_message(BlackjackAnnouncement(hand_number = hand_number))
-        if self.hands[hand_number].status == 'bust':
+        if self.hands[hand_number].is_busted():
             self.send_message(BustAnnouncement(hand_number = hand_number))
 
     def handle_DecisionRequest(self, msg):
-        action = self.decide()
+        hand_number = msg.get_property('hand_number')
+        action = self.decide(hand_number)
         if action == 'stand':
-            self.hands[msg.get_property('hand_number')].status = 'stand'
-
-        self.send_message(DecisionResponse(action = self.decide(), hand_number = msg.get_property('hand_number')))
+            self.hands[hand_number].status = 'stand'
+        self.send_message(DecisionResponse(action = action, hand_number = hand_number))
 
     def card_dealt_to_player(self, card):
         raise NotImplementedError()
@@ -157,7 +157,7 @@ class Player(Actor):
     def card_dealt_to_self(self, card, hand_number):
         raise NotImplementedError()
 
-    def decide(self):
+    def decide(self, hand_number):
         raise NotImplementedError()
 
 
@@ -172,7 +172,7 @@ class HumanPlayer(Player):
     def card_dealt_to_self(self, card, hand_number):
         pass
 
-    def decide(self):
+    def decide(self, hand_number):
         self.send_message(HumanDecisionRequest(allowed_actions = [ 'hit', 'stand']))
         return self.action
 
@@ -190,7 +190,7 @@ class BasicStrategyPlayer(Player):
         [('double','stand'),('double','stand'),('double','stand'),('double','stand'),('double','stand'),('stand',),('stand',),('hit',)  ,('hit',)  ,('hit',)  ],
         [('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('double','stand'),('stand',),('stand',),('stand',),('stand',),('stand',)],
         [('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',),('stand',),('stand',),('stand',),('stand',)],
-        [('stand',)         ('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',),('stand',),('stand',),('stand',),('stand',)],
+        [('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',)        ,('stand',),('stand',),('stand',),('stand',),('stand',)],
     ]
 
     hard_hands_decisions = [
