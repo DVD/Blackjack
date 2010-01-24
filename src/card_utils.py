@@ -1,20 +1,21 @@
 from UserList import UserList
 from random import shuffle
+from copy import deepcopy
 
 RANK_VALUE_HASH = {
-    'Two':      (2),
-    'Three':        (3),
-    'Four':     (4),
-    'Five':     (5),
-    'Six':      (6),
-    'Seven':        (7),
-    'Eight':        (8),
-    'Nine':     (9),
-    'Ten':      (10),
-    'Jack':     (10),
-    'Queen':        (10),
-    'King':     (10),
-    'Ace':      (11, 1)
+    'Two':      (2,),
+    'Three':        (3,),
+    'Four':     (4,),
+    'Five':     (5,),
+    'Six':      (6,),
+    'Seven':        (7,),
+    'Eight':        (8,),
+    'Nine':     (9,),
+    'Ten':      (10,),
+    'Jack':     (10,),
+    'Queen':        (10,),
+    'King':     (10,),
+    'Ace':      (11, 1,)
 }
 
 SUITS = ('Spades', 'Heart' , 'Diamonds', 'Clubs')
@@ -29,6 +30,7 @@ class BlackjackCard(object):
     @property
     def value(self):
         return RANK_VALUE_HASH[self.rank]
+
     @property
     def name(self):
         return self.__repr__()
@@ -77,11 +79,11 @@ class BlackjackHand(object):
     
     @property
     def sum(self):
-        return self._sum.clone()
+        return deepcopy(self._sum)
 
     @property
     def cards(self):
-        return self._cards.clone()
+        return deepcopy(self._cards)
 
     def double_down(self):
         # Application must check if the player is allowed to double-down
@@ -100,8 +102,12 @@ class BlackjackHand(object):
         new_hand.add_card(self._cards.pop(1))
         return new_hand
 
-    def is_blackjack():
+    def is_blackjack(self):
         return 21 in self._sum and len(self._cards) == 2
+
+    def is_busted(self):
+        return self._sum == []
+
 
 if __name__ == '__main__':
     deck = BlackjackDeck()
