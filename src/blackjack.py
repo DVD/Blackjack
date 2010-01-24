@@ -228,6 +228,9 @@ class BasicStrategyPlayer(Player):
             [False, False, False, False, False, False, False, False, False, False],
             [True , True , True , True , True , True , True , True , True , True ],
             ]
+    def __init__(self,player_id,money):
+        Player.__init__(self,player_id,money)
+        self.dealer_upcard=None
 
     def card_dealt_to_player(self, player, card):
         if player=='dealer':
@@ -236,13 +239,62 @@ class BasicStrategyPlayer(Player):
     def decide(self,hand_number):
         hand=self.hands[hand_number]
         if hand.is_hard:
-            return BasicStrategyPlayer.hard_hand_decisions[hand.sum[0]-4][self.dealer_upcard.value[0]-2][-1]
+            return BasicStrategyPlayer.hard_hand_decisions[hand.sum[0]-4][self.dealer_upcard.value[0]-2][-1] ##Change when added double down
         else:
-            return BasicStrategyPlayer.soft_hand_decisions[max(hand.sum)-13][self.dealer_upcard.value[0]-2][-1]
-        return
+            return BasicStrategyPlayer.soft_hand_decisions[max(hand.sum)-13][self.dealer_upcard.value[0]-2][-1] ##Change when added double down
     
     def card_dealt_to_self(self,card,hand_number):
         pass
+
+
+class HiLoCountingPlayer(BasicStrategyPlayer):
+    illustrious18=[[None for _ in range(2,12)] for __ in range(4,22)]
+    illustrious18 [16-4] [10-2] = (('stand',)      ,0)
+    illustrious18 [15-4] [10-2] = (('stand',)      ,4)
+    illustrious18 [10-4] [10-2] = (('double','hit'),4)
+    illustrious18 [12-4]  [3-2] = (('stand',)      ,2)
+    illustrious18 [12-4]  [2-2] = (('stand',)      ,3)
+    illustrious18 [11-4] [11-2] = (('double','hit'),1)
+    illustrious18  [9-4]  [2-2] = (('double','hit'),1)
+    illustrious18 [10-4] [11-2] = (('double','hit'),4)
+    illustrious18  [9-4]  [7-2] = (('double','hit'),3)
+    illustrious18 [16-4]  [9-2] = (('stand',)      ,5)
+    illustrious18 [13-4]  [2-2] = (('hit',)       ,-1)
+    illustrious18 [12-4]  [4-2] = (('hit',)        ,0)
+    illustrious18 [12-4]  [5-2] = (('hit',)       ,-2)
+    illustrious18 [12-4]  [6-2] = (('hit',)       ,-1)
+    illustrious18 [13-4]  [3-2] = (('hit',)       ,-2)
+    ##When we add splitting, 10+10 vs. 5/6 is 'split' with index 5/4
+
+    def __init__(self,player_id,money):
+        BasicStrategyPlayer.__init__(self,player_id,money)
+        self.running_count=0
+        self.unseen_cards=0
+
+    @property
+    def true_count(self):
+        return self.running_count/(self.unseen_cards/52.0)
+
+    def card_dealt_to_player(self ,player, card):
+        BasicStrategyPlayer.card_dealt_to_player(self,player,card)
+        self.running_count+=self._count_value(card)
+
+    def _count_value(self,card):
+        if card.value[0]<=6:
+            return 1
+        elif card.value[0]>=10:
+            return -1
+        return 0
+    def card_dealt_to_self(self,card,hand_number):
+        self.running_count+=self._count_value(card)
+
+    def decide(self,hand_number):
+        hand = self.hands[hand_number]
+        illustrious18_record = HiLoCountingPlayer.illustrious18[max(hand.sum)-4][self.dealer_upcard-2]
+        if illustrious18_record==None or self.true_count<illustrious18_record[1]:
+            return BasicStrategyPlayer.decide(self,hand_number)
+        else:
+            return illustrious18_record[0][-1] ## Change this when adding double down!!!
 
 if __name__ == '__main__':
     game = GameTable()
