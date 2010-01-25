@@ -2,6 +2,7 @@ import wx
 import Image
 from pysage import Actor, ActorManager, Message 
 from simpleui import SimpleUI
+import blackjack_messages
 
 BACKGROUND_COLOR = '#1ac500'
 ACTIVE_PLAYER_COLOR = 'PURPLE'
@@ -95,7 +96,7 @@ class BlackjackTable(wx.Frame, SimpleUI):
         self.Centre()
         self.Show(True)
         
-        self.app.ExitMainLoop()
+        #self.app.ExitMainLoop()
         # And here come the Actor's genes
         subscriptions=['DecisionRequest', 'DecisionResponse',\
                       'PlayerHandTurn', 'NextRound', 'WagerRequest',\
@@ -105,6 +106,9 @@ class BlackjackTable(wx.Frame, SimpleUI):
         
         print "Blackjack table"
 
+    def restart_gui(self):
+        self.app.MainLoop()
+        self.app.ExitMainLoop()
 
     def send_message(self,msg):
         print "GUI sent message"
@@ -121,8 +125,7 @@ class BlackjackTable(wx.Frame, SimpleUI):
         print "PlayerHandTurn message"
         self.set_active_player(int(msg.get_property('player_id')))
         self.player_panels[int(msg.get_property('player_id'))].set_wager_active(int(msg.get_property('hand_number')))
-        self.app.MainLoop()
-        self.app.ExitMainLoop()
+        self.restart_gui()
 
     def handle_CardDeal(self,msg):
         print "CardDeal"
@@ -134,29 +137,28 @@ class BlackjackTable(wx.Frame, SimpleUI):
             player_no = int(player)
             wager_no = int(msg.get_property('hand_number'))
             self.player_panels[player_no].wager_panels[wager_no].add_card_to_next_position(card_name)
-            self.app.MainLoop()
-            self.app.ExitMainLoop()
         
+
     def handle_DecisionRequest(self,msg):
         if msg.get_sender()=='dealer':
-            seld.dealer.set_action(self.player_labels[int(msg.get_property('player_id'))] + " play, please")
+            self.dealer.set_action(str(self.player_labels[int(msg.get_property('player_id'))]).append(" play, please"))            
+        self.app.MainLoop()
             
     def handle_DecisionResponse(self,msg):
         player = int(msg.get_sender())
         action = msg.get_property('action')
         sel.player_panels[player].wager_panels[0].set_action(action)
+        self.restart_gui()
         
     def handle_HumanDecisionRequest(self,msg):
-        seld.dealer.set_action("HumanPLayer, play, please")        
+        self.dealer.set_action("HumanPLayer, play, please")        
         self.app.MainLoop()
-#        answer=None
-
-       # while not answer in msg.get_property('allowed_actions'):
-        #    answer=raw_input("How do you play? %s :" % msg.get_property('allowed_actions'))
 
     def handle_WagerRequest(self,msg):
         if msg.get_sender()=='dealer':
             self.dealer.set_action("Wager request to" + self.player_labels[int(msg.get_property('player_id'))])
+
+        self.restart_gui()
     
     def handle_WagerResponse(self,msg):
         print("Player %s bets %s" % (msg.get_sender(),msg.get_property('wager_amount')))
@@ -165,17 +167,32 @@ class BlackjackTable(wx.Frame, SimpleUI):
         pass        
 
     def handle_BlackjackAnnouncement(self,msg):
-        pass
+        player_id = msg.get_sender()
+        wager_no = int(msg.get_property('hand_number'))
+        if player_id == 'dealer':
+            self.dealer.set_action("Blackjack!")
+        else:
+            self.player_panels[int(player_id)].wager_panels[wager_no].set_action("Blackjack!")
+
+        self.restart_gui()
 
     def handle_BustAnnouncement(self, msg):
-        pass
+        player_id = msg.get_sender()
+        wager_no = int(msg.get_property('hand_number'))
+        if player_id == 'dealer':
+            self.dealer.set_action("Bust!")
+        else:
+            self.player_panels[int(player_id)].wager_panels[wager_no].set_action("Bust!")
+
+        self.restart_gui()
+
 
     def handle_InsuranceOffer(self, msg):
-        pass
+        self.app.MainLoop()
+        self.offer_insurance()
+        self.app.ExitMainLoop()
 
-    def handle_InsuranceResponse(self, msg):
-        pass
-
+  
     #These functions are called when some option from the game menu is chosen        
     def onQuit(self, event):
         self.Close()
@@ -207,7 +224,7 @@ class BlackjackTable(wx.Frame, SimpleUI):
         '''Event handler for a keypad button pressed'''
         keycode = event.GetKeyCode()
 
-        if False: #keycode == wx.WXK_ESCAPE:
+        if keycode == wx.WXK_ESCAPE:
             self.app.ExitMainLoop()
             if self.player_panels[self.active_player].active_wager > 2:
                 self.set_active_player(self.active_player + 1)
@@ -357,7 +374,7 @@ class PlayerPanel(wx.Panel):
 
         label_panel = wx.Panel(self, -1, (0, 0), (PANEL_WIDTH, LABEL_OFFSET * 2))
         label_panel.SetBackgroundColour(PLAYER_LABEL_COLOR)
-        player_label = wx.StaticText(label_panel, -1, "PLAYER: " + player_name, (0, 0))
+        player_label = wx.StaticText(label_panel, -1, "PLAYER: " + str(player_name), (0, 0))
         strategy_label = wx.StaticText(label_panel, -1, "STRATEGY: " + strategy_name, (0, LABEL_OFFSET))
 
         wagers_panel = wx.Panel(self, -1, (0, LABEL_OFFSET*2), (PANEL_WIDTH, PANEL_HEIGHT - LABEL_OFFSET))
@@ -424,7 +441,7 @@ class CardPanel(wx.Panel):
 
     def extract_file_name(self, card_name):
         '''Extracts an image file name from card_name'''
-        file_name = card_name.replace(" ", "").lower()
+        file_name = str(card_name).replace(" ", "").lower()
         return "../images/" + file_name + ".png"
 
     def set_action(self, action=""):
@@ -558,6 +575,6 @@ class HumanPlayerRulesPanel(wx.Panel):
         wx.StaticText(self, -1, "Shift + M - Split", (0, LABEL_OFFSET * 5))
         wx.StaticText(self, -1, "Shift + D - Double Down", (0, LABEL_OFFSET * 6))
 
-app = wx.App()
-BlackjackTable(None, -1, 'Blackjack',[ "player 0", "player 1", "player 2", "player 3", "player 4", "player 5", "player 6"], app)
-app.MainLoop()
+#app = wx.App()
+#BlackjackTable(None, -1, 'Blackjack',[ "player 0", "player 1", "player 2", "player 3", "player 4", "player 5", "player 6"], app)
+#app.MainLoop()
