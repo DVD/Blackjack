@@ -1,3 +1,50 @@
-BlackJack AI Project
+README for Blackjack AI project
+by Maria Nikolova, Maria Mateva, Deyan Doychev
 
-By Maria Nikolova, Maria Mateva and Deyan Doychev
+This program is provided as is and comes with absolutely no warranty.
+Use at your own risk!!!
+
+=====================================================================
+
+Contents:
+
+1. Installation instructions
+2. Usage
+
+=====================================================================
+
+1. Installation instructions:
+-----------------------------
+In order to use this program you need python version 2.6.
+You need to install pysage: http://code.google.com/p/pysage .
+The easiest way to do this is by running:
+easyinstall pysage
+It was implemented and tested using pysage version 2.5.2. Other
+versions may also work but it is not guaranteed.
+
+For the GUI you need wxPython version 2.8 but it is currently not
+fully integrated.
+
+=====================================================================
+
+2. Usage
+--------
+The program currently runs 500 iterations of 100 games and summarizes
+the result.
+All games are played with 1 player against a dealer.
+
+It takes up to two arguments:
+	- the first argument specifies the type of the player that will
+		play. It can be one of the following:
+		- human - for human player
+		- SARSA - for the SARSA player - the self-learning player
+		- probability - for the Probability AI player
+		- HiLo - for the card-counting player
+		- basic - for the player using the basic strategy
+	- the second argument is optional. If it is present or the player
+		is a human player - the simple (console) UI is started and a
+		better log about the game is outputted.
+The game plays the iterations of hands and then summarizes the
+results. It creates a file called statistics that contains a line for
+each iteration - the number of games won by the player in these 100 
+games.
