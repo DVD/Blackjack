@@ -12,7 +12,7 @@ NUMBER_OF_PLAYERS = 7
 
 SCREEN_HEIGHT = 800
 SCREEN_WIDTH = 1320
-PANEL_WIDTH = 170
+PANEL_WIDTH = 174
 PANEL_HEIGHT = 500
 LABEL_OFFSET = 15
 CARD_OFFSET_SIDE = 15
@@ -32,19 +32,29 @@ class BlackjackTable(wx.Frame, pysage.Actor):
         # players_card_numbers - the number of the cards each player has in each of their piles
         # player_labels - labels of the players
         # player_panels - panel instances for each of the players
+        # app - a ref to the current application
         self.player_labels = player_labels
-
-
-        menubar = wx.MenuBar()
-        file = wx.Menu()
-        file.Append(-1, 'Quit', 'Quit application')
-        menubar.Append(file, '&File')
-        self.SetMenuBar(menubar)
-
         self.player_panels = []
         self.app = app
         self.active_player = active_player
 
+        # Defining the control menu 
+        menubar = wx.MenuBar()
+        setup = wx.Menu()
+        setup.Append(0, '&Setup Game Players and Strategies', 'Setup Game\'players and options')
+        setup.Append(1, '&Train a Player', 'Trains a player via neural network')
+        setup.Append(2, 'Start &Game', 'Starts a game with the current configuaration')
+        setup.Append(3, '&Quit', 'Get away from here')      
+
+        self.Bind(wx.EVT_MENU, self.onSetup, id=0)
+        self.Bind(wx.EVT_MENU, self.onTrain, id=1)
+        self.Bind(wx.EVT_MENU, self.onStart, id=2)
+        self.Bind(wx.EVT_MENU, self.onQuit, id=3)
+
+        menubar.Append(setup,'&Game')
+        self.SetMenuBar(menubar)
+       
+        # Layout panels and sht
         global_panel = wx.Panel(self, -1)
         global_panel.SetBackgroundColour(BACKGROUND_COLOR)
 
@@ -75,7 +85,7 @@ class BlackjackTable(wx.Frame, pysage.Actor):
             global_grid2.Add(player_panel)
             self.player_panels.append(player_panel)
 
-        vbox.Add(global_grid1, 0, wx.TOP, 9)
+        vbox.Add(global_grid1, 0, wx.BOTTOM, 9)
         vbox.Add(global_grid2, 0, wx.BOTTOM, 9)
         global_panel.SetSizer(vbox)
         global_panel.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
@@ -84,6 +94,33 @@ class BlackjackTable(wx.Frame, pysage.Actor):
         self.Centre()
         self.Show(True)
         #self.Bind(wx.EVT_PAINT, self.refresh_scene)
+
+    #These functions are called when some option from the game menu is chosen        
+    def onQuit(self, event):
+        self.Close()
+
+    def onStart(self, event):
+        self.offer_insurance()
+        event.Skip()
+
+    def onTrain(self, event):
+        pass
+
+    def onSetup(self, event):
+        GameSetupDialog(None, -1, "Players and Strategies Options")
+
+
+    # Dealer asks the HumanPlayer for insurance
+    def offer_insurance(self):
+        ''' Dealer asks the HumanPlayer for insurance. Answer is processed'''
+        insurance = wx.MessageDialog(None, 'Would you like insurance?', 'Insurance', wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+        reply = insurance.ShowModal()
+        if reply == wx.ID_YES:
+            #Process the event; HumanPlayer send an action message
+            print "YES!"
+        else:
+            print "NO!"
+    
 
     def on_key_down(self, event):
         '''Event handler for a keypad button pressed'''
@@ -100,17 +137,97 @@ class BlackjackTable(wx.Frame, pysage.Actor):
             self.app.ExitMainLoop()
         event.Skip()
 
+
     def set_active_player(self, player_no):
         '''Colors the active player in the ACTIVE_PLAYER_COLOR to emphasize who is he.'''
         self.player_panels[self.active_player].SetBackgroundColour(INACTIVE_PLAYER_COLOR)
+        for wager_panel in self.player_panels[self.active_player].wager_panels:
+            wager_panel.set_active(False)
         self.active_player = player_no
         self.player_panels[self.active_player].SetBackgroundColour(ACTIVE_PLAYER_COLOR)
-
 
 
     def reset_scene(self, event):
         pass
 
+class GameSetupDialog(wx.Dialog):
+    '''A class defining the dialog box for choosing players and strategies'''
+    def __init__(self, parent, id, title):
+        wx.Dialog.__init__(self, parent, id, title, size=(500, 270))
+        
+        
+        panel = wx.Panel(self, -1, (10, 10), (480, 260))        
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(wx.StaticText(panel, -1, 'Please choose player types and player strategies:', (0, 0)))
+
+        self.players = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6", "Player 7"]
+        self.player_types = ["DrunkPlayer", "BasicStrategyPlayer", "HiLoCountingPlayer", "ProbabilityCountingPlayer", "SARSALearningPlayer", "HumanPlayer"]
+        self.strategies = ["Random Bet", "Count Bet", "Kelly", "Half Kelly", "Paroli", "Labouchere", "Martingale"]
+        self.players_strategies = {\
+            "No Player": [],\
+            "DrunkPlayer": ["Random Bet", "Paroli", "Labouchere", "Martingale"],\
+            "BasicStrategyPlayer": ["Random Bet", "Paroli", "Labouchere", "Martingale"],\
+            "HiLoCountingPlayer": ["Random Bet", "Count Bet", "Paroli", "Labouchere", "Martingale"],\
+            "ProbabilityCountingPlayer": ["Random Bet", "Kelly", "Half Kelly", "Paroli", "Labouchere", "Martingale"],\
+            "SARSALearningPlayer": ["Random Bet", "Paroli", "Labouchere", "Martingale"],\
+            "HumanPlayer": [] }
+
+        self.players_num = 7
+        
+        self.first_combo_boxes = []
+        self.second_combo_boxes = [wx.ComboBox(panel, -1, pos=(300, (i + 1) * 20), size=(150, -1), choices=[], style=wx.CB_READONLY) for i in range(self.players_num)]
+        
+        count = 0
+        for combo in self.second_combo_boxes:
+            combo.index = self.players_num + count
+            combo.SetValue("None")
+            count += 1
+
+        grid = wx.GridSizer(7, 3, 10, 3)
+        row_count = 0
+        for player_choice in self.players:
+            hbox = wx.BoxSizer(wx.HORIZONTAL)
+            text = wx.StaticText(panel, -1, "Type of " + player_choice, (0, (row_count + 1) * 20))
+            combo = wx.ComboBox(panel, row_count, pos=(100, (row_count + 1) * 20), size=(150, -1), choices=self.player_types, style=wx.CB_READONLY)
+            combo.SetValue("None")
+            self.first_combo_boxes.append(combo)
+            combo.index = row_count
+            grid.Add(text)
+            grid.Add(combo)
+            grid.Add(self.second_combo_boxes[row_count])
+            row_count += 1
+
+        vbox.Add(grid)
+        
+        button = wx.Button(panel, 123, 'Done')
+        self.Bind(wx.EVT_BUTTON, self.confDone)
+        vbox.Add(button)
+        panel.SetSizer(vbox)
+
+        self.Bind(wx.EVT_COMBOBOX, self.OnSelect)
+
+        self.Centre()
+        self.ShowModal()
+        self.Destroy()
+    
+    
+    def OnClose(self, event):
+        self.Close()
+
+    def OnSelect(self, event):
+        combo = event.GetEventObject()
+        if combo.index < self.players_num:
+            self.second_combo_boxes[combo.index].choices = self.players_strategies[self.player_types[combo.index]]
+#            self.second_combo_boxes[combo.index] = wx.ComboBox(self.panel, row_count, pos=(100, (row_count + 1) * 20), size=(150, -1), choices=self.players_strategies[self.player_types[combo.index]]
+        else:
+            print combo.index
+            
+
+    def confDone(self, event):
+        for chosen_player in self.first_combo_boxes:
+            print chosen_player.GetValue()
+        #parse current configuration
+        self.Close()
 
 
 class PlayerPanel(wx.Panel):
@@ -289,7 +406,7 @@ class WagerPanel(CardPanel):
         self.wager_label = wx.StaticText(self, -1, "WAGER: ", (0, 0))
         self.action_label = wx.StaticText(self, -1, "ACTION: ", (0, LABEL_OFFSET))
 
-        self.add_card_to_next_position("King of Spades")
+        self.add_card_to_next_position("King of Hearts")
 
     def reset(self):
         CardPanel.reset(self)
@@ -314,7 +431,7 @@ class WagerPanel(CardPanel):
 
     def add_card_to_next_position(self, card_name):
         '''This methods adds the card, whose name by convention is card_name,
-            to the pile of that particular wager'''
+            to the pile of that wager'''
         card_image_file_name = self.extract_file_name(card_name)
         self.add_card_to_position(card_image_file_name, 0, self.number_of_cards * CARD_OFFSET_DOWN + LABEL_OFFSET * 2, self.number_of_cards)
         self.number_of_cards += 1
