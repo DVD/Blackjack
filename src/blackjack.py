@@ -1,3 +1,4 @@
+#!/usr/bin/env python2.6
 import card_utils
 import random
 from blackjack_messages import *
