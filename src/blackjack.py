@@ -21,7 +21,7 @@ class GameTable(object):
         self.ranking = []
         self.is_eliminated = [ False ] * 7
         # this initialization must change
-        self.players = [ HumanPlayer(str(i), 100) for i in range(1) ]
+        self.players = [ HumanPlayer(str(i), 100000000) for i in range(1) ]
         self.players.append(BasicStrategyPlayer('1',200))
         self.players.append(HiLoCountingPlayer('2',250))
         self.ui = SimpleUI()
@@ -30,14 +30,56 @@ class GameTable(object):
         am.register_actor(self.ui, 'ui')
         for player in self.players:
             am.register_actor(player, player.player_id)
-        am.register_actor(self.dealer, 'dealer')
+        #am.register_actor(self.dealer, 'dealer')
 
     def play_game(self):
         '''Play an Elimination Blackjack game'''
         self.__play_round()
 
+    def train_player(self, player, dealer):
+        total_won=0
+        f=open("statistics","w")
+        for iteration in range(500):
+            won = 0
+            lost = 0
+            for game in range(100):
+                player.hands = [card_utils.BlackjackHand()]
+                player.hands[0].wager = 1
+                dealer.hand = card_utils.BlackjackHand()
+                dealer.deal_cards([player])
+                dealer.deal_with_player(player)
+                dealer.play()
+                hand = player.hands[0]
+                if hand.is_busted():
+                    player.result(0, -hand.wager)
+                    lost += 1
+                elif hand.is_blackjack():
+                    if dealer.hand.is_blackjack():
+                        player.result(0, 0)
+                    else:
+                        player.result(0, hand.wager*3.0/2.0)
+                        won += 1
+                else:
+                    print repr(dealer.hand.sum)
+                    dp = max(0, 0, *dealer.hand.sum)
+                    pp = max(0, 0, *hand.sum)
+                    if dp > pp:
+                        lost += 1
+                        player.result(0, -hand.wager)
+                    elif dp < pp:
+                        won += 1
+                        player.result(0, hand.wager)
+                    else:
+                        player.result(0, 0)
+            total_won+=won            
+            f.write("%d\n" % won)
+        print("Total won: %s" % repr(total_won))
+        f.close()
+           
+
     def __play_round(self):
         '''Plays a single Elimination Blackjack round'''
+        #TODO: reinitialize hands before actual play
         ActorManager.get_singleton().trigger(NextRound(round_number = self.round_number))
         players = [player for player_num, player in enumerate(self.players) if not self.is_eliminated[player_num]]
         self.dealer.deal_cards(players)
@@ -50,6 +92,25 @@ class GameTable(object):
         '''Update the database with current game ranking'''
         #called at the end of a game??
         raise 'Unimplemented error!'
+    
+    def __pay_off(self):
+        for player_num, player in enumerate(self.players):
+            if not is_eliminated[player_num]:
+                for hand_number, hand in enumerate(player.hands):
+                    if hand.is_busted():
+                        player.result(hand_number, -hand.wager)
+                    elif hand.is_blackjack():
+                        player.result(hand_number, 0) if self.dealer.hand.is_blackjack() else player.result(hand_number, hand.money*3.0/2.0)
+                    else:
+                        dp = max(self.dealer.hand.sum)
+                        pp = max(hand.sum)
+                        if dp > pp:
+                            player.result(hand_number, -hand.wager)
+                        elif dp < pp:
+                            player.result(hand_number, hand.wager)
+                        else:
+                            player.result(hand_number, 0)
+
 
 
 class Dealer(Actor):
@@ -75,20 +136,20 @@ class Dealer(Actor):
 
     def deal_card(self, player_num, hand_num, card = None):
         if not card:
-            card = self.deck.pop(0)
+            card = self.deck.deal()
         self.send_message(CardDeal(player_id = player_num, hand_number = hand_num, card = card))
 
     def deal_cards(self, players):
         for player in players:
             self.deal_card(player.player_id, 0)
-        card = self.deck.pop(0)
+        card = self.deck.deal()
         self.hand.add_card(card)
         self.deal_card('dealer', 0, card)
         for player in players:
             self.deal_card(player.player_id, 0)
 
     def deal_with_player(self, player):
-        self.cuurent_player = player.player_id
+        self.current_player = player.player_id
         for (hand_num, hand) in enumerate(player.hands):
             self.current_hand = hand_num
             self.send_message(PlayerHandTurn(player_id = player.player_id, hand_number = hand_num))
@@ -98,11 +159,11 @@ class Dealer(Actor):
     def handle_DecisionResponse(self, msg):
         if (msg.get_property('action') == 'hit'):
             self.send_message(
-                    CardDeal(player_id = self.cuurent_player, hand_number = self.current_hand, card = self.deck.deal()))
+                    CardDeal(player_id = self.current_player, hand_number = self.current_hand, card = self.deck.deal()))
 
     def play(self):
         while len(self.hand.sum) > 0 and ( min(self.hand.sum) < 17 or ( min(self.hand.sum) == 17 and len(self.hand.sum) > 1) ):
-            card = self.deck.pop(0)
+            card = self.deck.deal()
             self.hand.add_card(card)
             self.deal_card('dealer', 0, card)
 
@@ -122,6 +183,8 @@ class Player(Actor):
         self.player_id = player_id
         self.money = money
         self.hands = [ card_utils.BlackjackHand() ]
+        # reimplement this
+        self.hands[0].wager = 100
         self.insurance = 0
         self.subscriptions = [ 'WagerRequest', 'InsuranceOffer', 'CardDeal' , 'DecisionRequest']
 
@@ -165,7 +228,7 @@ class Player(Actor):
     def decide(self, hand_number):
         raise NotImplementedError()
 
-    def result(self, money):
+    def result(self, hand_number, money):
         pass
 
 
@@ -243,7 +306,7 @@ class BasicStrategyPlayer(Player):
 
     def decide(self,hand_number):
         hand=self.hands[hand_number]
-        if hand.is_hard:
+        if hand.is_hard():
             return BasicStrategyPlayer.hard_hand_decisions[hand.sum[0]-4][self.dealer_upcard.value[0]-2][-1] ##Change when added double down
         else:
             return BasicStrategyPlayer.soft_hand_decisions[max(hand.sum)-13][self.dealer_upcard.value[0]-2][-1] ##Change when added double down
@@ -260,6 +323,7 @@ class SARSAPlayer(Player):
         Player.__init__(self, player_id, money)
         self.epsilon = epsilon
         self.gamma = gamma
+        self.alpha = alpha
         self.q = dict( [ (state, dict( [(action, random.random()) for action in SARSAPlayer.actions] ))  for state in SARSAPlayer.states ] )
         self.reset()
 
@@ -270,31 +334,43 @@ class SARSAPlayer(Player):
     def card_dealt_to_player(self, player, card):
         pass
 
-    def card_dealt_to_self(self, card):
+    def card_dealt_to_self(self, card, hand_number):
         pass
 
-    def decide(hand_number):
+    def _state(self,hand_number):
+        hand=self.hands[hand_number]
+        if hand.is_hard():
+            return hand.sum[0]
+        else:
+            return max(hand.sum)+10
+
+    def decide(self, hand_number):
         #TODO: implement hands when we are ready
 
         #epsilon-greedy choose
         choose_best = random.random()
-        if choose_best < eps:
+        state = self._state(hand_number)
+        if choose_best < self.epsilon:
             #so we have to pick a radom action
-            action = 'hit' if random.randint() == 1 else 'stand'
-            state = random.choice(self.hand[hand_number].sum)
+            action = 'hit' if random.randint(0,1) == 1 else 'stand'
         else:
-            (action, state) = reduce(lambda x, y: (x[0][0],x[1]) if x[0][1] > y[0][1] else (y[0][0], y[1]), [(pair, st) for pair in self.q[st] for st in self.hand[hand_number].sum])
+            #(action, state) = reduce(lambda x, y: (x[0][0],x[1]) if x[0][1] > y[0][1] else (y[0][0], y[1]), [(pair, st) for pair in self.q[st] for st in self.hand[hand_number].sum])
+            print self.hands[hand_number].sum
+            action = self.q[state].keys()[self.q[state].values().index(max(self.q[state].values()))]
+
+        print action, state
 
         if self.s > 0:
             self.q[self.s][self.a] += self.alpha * (self.r + self.gamma * self.q[state][action] - self.q[self.s][self.a])
 
         self.s, self.a = state, action
         self.r = 0
+        return action
 
-    def result(money):
-        if result > 0:
+    def result(self, hand_number, money):
+        if money > 0:
             self.r = 1
-        elif result < 0:
+        elif money < 0:
             self.r = -1
         else:
             self.r = 0
@@ -358,5 +434,12 @@ class HiLoCountingPlayer(BasicStrategyPlayer):
 
 if __name__ == '__main__':
     game = GameTable()
-    game.play_game()
+#    game.play_game()
+    player = SARSAPlayer('3', 1000000000, 0.01, 0.01, 0.9)
+    dealer = Dealer();
+    ActorManager.get_singleton().register_actor(player, player.player_id)
+    ActorManager.get_singleton().register_actor(dealer, 'dealer')
+    game.train_player(player, dealer);
+
+
 
