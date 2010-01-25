@@ -1,11 +1,13 @@
 import wx
 import Image
-import pysage
-import string
+from pysage import Actor, ActorManager, Message 
+from simpleui import SimpleUI
+import blackjack_messages
 
 BACKGROUND_COLOR = '#1ac500'
 ACTIVE_PLAYER_COLOR = 'PURPLE'
 INACTIVE_PLAYER_COLOR = 'GRAY'
+ELIMINATED_PLAYER_COLOR = '#000000'
 PLAYER_LABEL_COLOR = 'WHITE'
 
 NUMBER_OF_PLAYERS = 7
@@ -22,13 +24,13 @@ CARD_WIDTH = 79
 COLUMNS_OFFSET = 5
 ROWS_OFFSET = 50
 
-
-class BlackjackTable(wx.Frame, pysage.Actor):
+class BlackjackTable(wx.Frame, SimpleUI):
     '''The Class representing the main GUI: the table and the players' cards and actions.'''
     def __init__(self, parent, id, title, player_labels, app, active_player=0):
         '''Constructor for BlackjackTable, main class for the game's GUI'''
-        wx.Frame.__init__(self, parent, id, title, size=(SCREEN_WIDTH, SCREEN_HEIGHT))
 
+        wx.Frame.__init__(self, parent, id, title, size=(SCREEN_WIDTH, SCREEN_HEIGHT))
+        
         # players_card_numbers - the number of the cards each player has in each of their piles
         # player_labels - labels of the players
         # player_panels - panel instances for each of the players
@@ -53,32 +55,32 @@ class BlackjackTable(wx.Frame, pysage.Actor):
 
         menubar.Append(setup,'&Game')
         self.SetMenuBar(menubar)
-       
+
+        DEALER_PANEL_HEIGHT = CARD_HEIGHT + 2 * LABEL_OFFSET + 50
+
         # Layout panels and sht
         global_panel = wx.Panel(self, -1)
         global_panel.SetBackgroundColour(BACKGROUND_COLOR)
+
+        self.dealer = DealerPanel(global_panel, -1, (0, 0), (PANEL_WIDTH, DEALER_PANEL_HEIGHT))
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         global_grid1 = wx.GridSizer(1, 7, 5, 0)
         global_grid2 = wx.GridSizer(1, 7, 5, 0)
 
-        DEALER_PANEL_HEIGHT = CARD_HEIGHT + 2 * LABEL_OFFSET + 50
-
-        # inserting empty spaces (what are we livin' for)
-        for i in range(3):
-            global_grid1.Add((PANEL_WIDTH, DEALER_PANEL_HEIGHT), 0)
-
-        # adding the Dealer
-        global_grid1.Add(DealerPanel(global_panel, -1, (0, 0), (PANEL_WIDTH, DEALER_PANEL_HEIGHT)), 1, wx.TOP, 0)
-
-        # inserting empty spaces (what are we livin' for)
-        global_grid1.Add((PANEL_WIDTH, DEALER_PANEL_HEIGHT), 0)
-
-        # adding the HumanPlayerRulesMunu as a legend
+        #Simple rules panel
         global_grid1.Add(HumanPlayerRulesPanel(global_panel, (PANEL_WIDTH, DEALER_PANEL_HEIGHT), "Rules"))
 
         # inserting empty spaces (what are we livin' for)
-        global_grid1.Add((PANEL_WIDTH, DEALER_PANEL_HEIGHT), 0)
+        for i in range(2):
+            global_grid1.Add((PANEL_WIDTH, DEALER_PANEL_HEIGHT), 0)
+
+        # adding the Dealer
+        global_grid1.Add(self.dealer, 0, wx.TOP, 9)
+       
+        # inserting empty spaces (what are we livin' for)
+        for i in range(3):
+            global_grid1.Add((PANEL_WIDTH, DEALER_PANEL_HEIGHT), 0)
 
         for player in player_labels:
             player_panel = PlayerPanel(global_panel, (PANEL_WIDTH, PANEL_HEIGHT), player)
@@ -88,13 +90,109 @@ class BlackjackTable(wx.Frame, pysage.Actor):
         vbox.Add(global_grid1, 0, wx.BOTTOM, 9)
         vbox.Add(global_grid2, 0, wx.BOTTOM, 9)
         global_panel.SetSizer(vbox)
-        global_panel.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
+        global_panel.Bind(wx.EVT_CHAR, self.on_key_down)
         global_panel.SetFocus()
 
         self.Centre()
         self.Show(True)
-        #self.Bind(wx.EVT_PAINT, self.refresh_scene)
+        
+        #self.app.ExitMainLoop()
+        # And here come the Actor's genes
+        subscriptions=['DecisionRequest', 'DecisionResponse',\
+                      'PlayerHandTurn', 'NextRound', 'WagerRequest',\
+                      'WagerResponse', 'BlackjackAnnouncement', 'BustAnnouncement',\
+                      'InsuranceOffer', 'InsuranceResponse', 'CardDeal',\
+                      'HumanDecisionRequest', 'HumanInsuranceResponse']
+        
+        print "Blackjack table"
 
+    def restart_gui(self):
+        self.app.MainLoop()
+        self.app.ExitMainLoop()
+
+    def send_message(self,msg):
+        print "GUI sent message"
+        msg.sender='gui'
+        ActorManager.get_singleton().trigger(msg)
+
+    def handle_NextRound(self,msg):
+        # TODO reset all wager fields
+        print('*'*50)
+        print("\nRound number %s\n" % msg.get_property('round_number')) 
+    
+
+    def handle_PlayerHandTurn(self,msg):
+        print "PlayerHandTurn message"
+        self.set_active_player(int(msg.get_property('player_id')))
+        self.player_panels[int(msg.get_property('player_id'))].set_wager_active(int(msg.get_property('hand_number')))
+        self.restart_gui()
+
+    def handle_CardDeal(self,msg):
+        print "CardDeal"
+        player = msg.get_property('player_id')
+        card_name = msg.get_property('card')
+        if player == 'dealer':
+            self.dealer.add_card_to_next_position(card_name)
+        else:
+            player_no = int(player)
+            wager_no = int(msg.get_property('hand_number'))
+            self.player_panels[player_no].wager_panels[wager_no].add_card_to_next_position(card_name)
+        
+
+    def handle_DecisionRequest(self,msg):
+        if msg.get_sender()=='dealer':
+            self.dealer.set_action(str(self.player_labels[int(msg.get_property('player_id'))]).append(" play, please"))            
+        self.app.MainLoop()
+            
+    def handle_DecisionResponse(self,msg):
+        player = int(msg.get_sender())
+        action = msg.get_property('action')
+        sel.player_panels[player].wager_panels[0].set_action(action)
+        self.restart_gui()
+        
+    def handle_HumanDecisionRequest(self,msg):
+        self.dealer.set_action("HumanPLayer, play, please")        
+        self.app.MainLoop()
+
+    def handle_WagerRequest(self,msg):
+        if msg.get_sender()=='dealer':
+            self.dealer.set_action("Wager request to" + self.player_labels[int(msg.get_property('player_id'))])
+
+        self.restart_gui()
+    
+    def handle_WagerResponse(self,msg):
+        print("Player %s bets %s" % (msg.get_sender(),msg.get_property('wager_amount')))
+    
+    def handle_HumanWagerRequest(self,msg):
+        pass        
+
+    def handle_BlackjackAnnouncement(self,msg):
+        player_id = msg.get_sender()
+        wager_no = int(msg.get_property('hand_number'))
+        if player_id == 'dealer':
+            self.dealer.set_action("Blackjack!")
+        else:
+            self.player_panels[int(player_id)].wager_panels[wager_no].set_action("Blackjack!")
+
+        self.restart_gui()
+
+    def handle_BustAnnouncement(self, msg):
+        player_id = msg.get_sender()
+        wager_no = int(msg.get_property('hand_number'))
+        if player_id == 'dealer':
+            self.dealer.set_action("Bust!")
+        else:
+            self.player_panels[int(player_id)].wager_panels[wager_no].set_action("Bust!")
+
+        self.restart_gui()
+
+
+    def handle_InsuranceOffer(self, msg):
+        self.app.MainLoop()
+        self.offer_insurance()
+        self.app.ExitMainLoop()
+
+  
     #These functions are called when some option from the game menu is chosen        
     def onQuit(self, event):
         self.Close()
@@ -107,7 +205,7 @@ class BlackjackTable(wx.Frame, pysage.Actor):
         pass
 
     def onSetup(self, event):
-        GameSetupDialog(None, -1, "Players and Strategies Options")
+        GameSetupDialog(None, self.app, -1, "Players and Strategies Options")
 
 
     # Dealer asks the HumanPlayer for insurance
@@ -125,8 +223,8 @@ class BlackjackTable(wx.Frame, pysage.Actor):
     def on_key_down(self, event):
         '''Event handler for a keypad button pressed'''
         keycode = event.GetKeyCode()
+
         if keycode == wx.WXK_ESCAPE:
-#        if keycode == wx.WXK_H:
             self.app.ExitMainLoop()
             if self.player_panels[self.active_player].active_wager > 2:
                 self.set_active_player(self.active_player + 1)
@@ -135,7 +233,27 @@ class BlackjackTable(wx.Frame, pysage.Actor):
 
             self.app.MainLoop()
             self.app.ExitMainLoop()
-        event.Skip()
+
+        # H - hit
+        elif keycode == 72:
+            print "HumanPlayer: hit!"                
+            self.app.ExitMainLoop()
+            self.send_message(HumanDecisionResponse(player_id=msg.get_sender(),action='hit'))
+
+        # S -stand
+        elif keycode == 83:
+            print "HumanPlayer: stand!"
+            self.app.ExitMainLoop()
+            self.send_message(HumanDecisionResponse(player_id=msg.get_sender(),action='stand'))
+            
+
+        # D - double down
+        elif keycode == 68:
+            print "D"
+
+        # M - split
+        elif keycode == 77:
+            print "M"
 
 
     def set_active_player(self, player_no):
@@ -147,19 +265,25 @@ class BlackjackTable(wx.Frame, pysage.Actor):
         self.player_panels[self.active_player].SetBackgroundColour(ACTIVE_PLAYER_COLOR)
 
 
+    def set_eliminated_player(self, player_no):
+        self.player_panels[player_no].SetBackgroundColour(ELIMINATED_PLAYER_COLOR)       
+        self.player_panels[player_no].wager_panels[0].set_action('Eliminated.')
+
     def reset_scene(self, event):
         pass
+
 
 class GameSetupDialog(wx.Dialog):
     '''A class defining the dialog box for choosing players and strategies'''
     def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, size=(500, 270))
+        wx.Dialog.__init__(self, parent, app, id, title, size=(500, 300))
         
         
-        panel = wx.Panel(self, -1, (10, 10), (480, 260))        
+        panel = wx.Panel(self, -1, (10, 10), (480, 290))        
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(wx.StaticText(panel, -1, 'Please choose player types and player strategies:', (0, 0)))
 
+        self.app = app
         self.players = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6", "Player 7"]
         self.player_types = ["DrunkPlayer", "BasicStrategyPlayer", "HiLoCountingPlayer", "ProbabilityCountingPlayer", "SARSALearningPlayer", "HumanPlayer"]
         self.strategies = ["Random Bet", "Count Bet", "Kelly", "Half Kelly", "Paroli", "Labouchere", "Martingale"]
@@ -183,7 +307,7 @@ class GameSetupDialog(wx.Dialog):
             combo.SetValue("None")
             count += 1
 
-        grid = wx.GridSizer(7, 3, 10, 3)
+        grid = wx.GridSizer(7, 3, 20, 3)
         row_count = 0
         for player_choice in self.players:
             hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -217,15 +341,20 @@ class GameSetupDialog(wx.Dialog):
     def OnSelect(self, event):
         combo = event.GetEventObject()
         if combo.index < self.players_num:
-            self.second_combo_boxes[combo.index].choices = self.players_strategies[self.player_types[combo.index]]
-#            self.second_combo_boxes[combo.index] = wx.ComboBox(self.panel, row_count, pos=(100, (row_count + 1) * 20), size=(150, -1), choices=self.players_strategies[self.player_types[combo.index]]
+            #self.second_combo_boxes[combo.index].choices = self.players_strategies[self.player_types[combo.index]]
+            #self.app.ExitMainLoop()
+            self.second_combo_boxes[combo.index] = wx.ComboBox(self.panel, row_count, pos=(100, (row_count + 1) * 20), size=(150, -1), choices=self.players_strategies[self.player_types[combo.index]])
+            print self.players_strategies[self.player_types[combo.index]]
+            #self.app.MainLoop()
         else:
-            print combo.index
+            pass
+        print combo.index
             
 
     def confDone(self, event):
         for chosen_player in self.first_combo_boxes:
-            print chosen_player.GetValue()
+            if chosen_player.GetValue() != "None":
+                print chosen_player.GetValue()
         #parse current configuration
         self.Close()
 
@@ -245,7 +374,7 @@ class PlayerPanel(wx.Panel):
 
         label_panel = wx.Panel(self, -1, (0, 0), (PANEL_WIDTH, LABEL_OFFSET * 2))
         label_panel.SetBackgroundColour(PLAYER_LABEL_COLOR)
-        player_label = wx.StaticText(label_panel, -1, "PLAYER: " + player_name, (0, 0))
+        player_label = wx.StaticText(label_panel, -1, "PLAYER: " + str(player_name), (0, 0))
         strategy_label = wx.StaticText(label_panel, -1, "STRATEGY: " + strategy_name, (0, LABEL_OFFSET))
 
         wagers_panel = wx.Panel(self, -1, (0, LABEL_OFFSET*2), (PANEL_WIDTH, PANEL_HEIGHT - LABEL_OFFSET))
@@ -259,11 +388,7 @@ class PlayerPanel(wx.Panel):
                 wager_panel = WagerPanel(wagers_panel, i, (i * (PANEL_WIDTH / 2), 0), (PANEL_WIDTH / 2, PANEL_HEIGHT / 2 - LABEL_OFFSET))
             else:
                 wager_panel = WagerPanel(wagers_panel, i, ((i % 2) * (PANEL_WIDTH / 2), PANEL_HEIGHT / 2 - LABEL_OFFSET), (PANEL_WIDTH / 2, PANEL_HEIGHT / 2 - LABEL_OFFSET))
-                #wager_panel = WagerPanel(wagers_panel, i, (PANEL_WIDTH / 2, PANEL_HEIGHT / 2), (PANEL_WIDTH / 2, PANEL_HEIGHT / 2))
-            #wagers_grid.Add(wager_panel)
-
             self.wager_panels.append(wager_panel)
-        #wagers_panel.SetSizer(wagers_grid)
 
         vbox.Add(strategy_label, 0, wx.BOTTOM, 9)
         vbox.Add(player_label, 0, wx.BOTTOM, 9)
@@ -271,7 +396,7 @@ class PlayerPanel(wx.Panel):
         self.SetSizer(vbox)
 
         self.Bind(wx.EVT_PAINT, self.paint)
-        self.add_card_to_player_in_pile('Ace of Spades', 3)
+#        self.add_card_to_player_in_pile('Ace of Spades', 3)
 
 
 
@@ -316,7 +441,7 @@ class CardPanel(wx.Panel):
 
     def extract_file_name(self, card_name):
         '''Extracts an image file name from card_name'''
-        file_name = card_name.replace(" ", "").lower()
+        file_name = str(card_name).replace(" ", "").lower()
         return "../images/" + file_name + ".png"
 
     def set_action(self, action=""):
@@ -348,20 +473,15 @@ class DealerPanel(CardPanel):
         wx.StaticText(self, -1, "DEALER" , (0, 0))
 
         self.number_of_cards = 0
-        self.action_label = wx.StaticText(self, -1, "ACTION: ", (0, LABEL_OFFSET))
+        self.action_label = wx.StaticText(self, -1, "ACTION: ", (0, LABEL_OFFSET), (200, 20))
 
         # keeps the name of the first card that stays hidden
         self.initial_card = ""
-        print self.initial_card
         
-        self.add_card_to_next_position("Ten of Spades")
-        self.add_card_to_next_position("Ace of Hearts") 
-
-        self.add_card_to_next_position("Ace of Hearts") 
-        self.add_card_to_next_position("Ace of Hearts") 
-        self.add_card_to_next_position("Ace of Hearts") 
-        self.add_card_to_next_position("Ace of Hearts") 
-        self.unhide_initial_card()
+#        self.add_card_to_next_position("Ten of Spades")
+ #       self.add_card_to_next_position("Ace of Hearts") 
+     #   self.add_card_to_next_position("Ace of Hearts") 
+      #  self.unhide_initial_card()
 
     def reset(self):
         CardPanel.reset(self)
@@ -406,7 +526,7 @@ class WagerPanel(CardPanel):
         self.wager_label = wx.StaticText(self, -1, "WAGER: ", (0, 0))
         self.action_label = wx.StaticText(self, -1, "ACTION: ", (0, LABEL_OFFSET))
 
-        self.add_card_to_next_position("King of Hearts")
+#        self.add_card_to_next_position("King of Hearts")
 
     def reset(self):
         CardPanel.reset(self)
@@ -450,11 +570,11 @@ class HumanPlayerRulesPanel(wx.Panel):
         wx.StaticText(self, -1, "HUMAN PLAYER:", (0, 0))
         wx.StaticText(self, -1, "Keyboard Actions:", (0, LABEL_OFFSET))
         wx.StaticText(self, -1, "", (0, LABEL_OFFSET * 2))
-        wx.StaticText(self, -1, "H - Hit", (0, LABEL_OFFSET * 3))
-        wx.StaticText(self, -1, "D - Deal", (0, LABEL_OFFSET * 4))
-        wx.StaticText(self, -1, "S - Split", (0, LABEL_OFFSET * 5))
-        wx.StaticText(self, -1, "W - Double Down", (0, LABEL_OFFSET * 6))
+        wx.StaticText(self, -1, "Shift + H - Hit", (0, LABEL_OFFSET * 3))
+        wx.StaticText(self, -1, "Shift + S - Stand", (0, LABEL_OFFSET * 4))
+        wx.StaticText(self, -1, "Shift + M - Split", (0, LABEL_OFFSET * 5))
+        wx.StaticText(self, -1, "Shift + D - Double Down", (0, LABEL_OFFSET * 6))
 
-app = wx.App()
-BlackjackTable(None, -1, 'Blackjack',[ "player 0", "player 1", "player 2", "player 3", "player 4", "player 5", "player 6"], app)
-app.MainLoop()
+#app = wx.App()
+#BlackjackTable(None, -1, 'Blackjack',[ "player 0", "player 1", "player 2", "player 3", "player 4", "player 5", "player 6"], app)
+#app.MainLoop()
