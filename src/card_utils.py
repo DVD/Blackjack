@@ -18,7 +18,7 @@ RANK_VALUE_HASH = {
     'Ace':      (11, 1,)
 }
 
-SUITS = ('Spades', 'Heart' , 'Diamonds', 'Clubs')
+SUITS = ('Spades', 'Hearts' , 'Diamonds', 'Clubs')
 
 RANKS = ('Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Jack', 'Queen', 'King', 'Ace')
 
